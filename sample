@@ -1,0 +1,34 @@
+#!/usr/bin/env perl
+use Mojolicious::Lite;
+
+# /foo?user=sri
+get '/foo' => sub {
+	my $self = shift;
+	my $user = $self->param('user');
+	my $id = $self->param('id');
+	$self->render(text => "Hello $user. Your id is $id.");
+};
+
+get '/' => sub {
+	my $self = shift;
+	$self->render('index');
+};
+
+app->start;
+__DATA__
+
+@@ index.html.ep
+% layout 'default';
+% title 'This is the title!';
+Mojoliciousへようこそ！
+
+<div>divではさむと</div>
+
+<p><strong>ここはstrong</strong></p>
+
+@@ layouts/default.html.ep
+<!DOCTYPE html>
+<html>
+	<head><title><%= title %></title></head>
+	<body><%= content %></body>
+</html>
