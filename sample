@@ -11,7 +11,17 @@ get '/foo' => sub {
 
 get '/' => sub {
 	my $self = shift;
+	my $name = $self->param('name');
+	$self->stash(name => $name);
 	$self->render('index');
+};
+
+get '/agent' => sub {
+	my $self = shift;
+	my $host = $self->req->url->to_abs->host;
+	my $ua = $self->req->headers->user_agent;
+	$self->res->headers->header('X-Bender' => 'This is my own herder');
+	$self->render(text => "Request by $ua reached $host.");
 };
 
 app->start;
@@ -25,6 +35,8 @@ Mojoliciousへようこそ！
 <div>divではさむと</div>
 
 <p><strong>ここはstrong</strong></p>
+
+<div>nameの値: <%= $name %> 左にnameの値</div>
 
 @@ layouts/default.html.ep
 <!DOCTYPE html>

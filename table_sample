@@ -1,0 +1,85 @@
+#!/usr/bin/env perl
+ 
+# use 5.010; # Mojolicious 1.9.8以降はPerl 5.10対応
+use Mojolicious::Lite;
+use Mojo::Util qw(decode);
+use File::Basename;
+use File::Spec;
+ 
+my $file_dir = app->home->rel_dir('./');
+ 
+get '/' => sub {
+  my $self = shift;
+  my @filelist = glob( File::Spec->catfile( $file_dir, '*' ) );
+  my $files = [];
+  for my $filename ( @filelist ) {
+    my @stat = stat $filename;
+    push @$files, {
+      filename => decode('utf8', File::Basename::basename($filename) ),
+      size  => $stat[7],
+      mtime => $stat[9],
+      mode => $stat[2],
+    };
+  }
+  $self->stash( files => $files );
+} => 'index';
+ 
+# Mojolicious Helpers
+
+helper humanreadable_filesize => sub {
+	my ($self, $string) = @_;
+	my $size = $string;
+	my $unit = 'byte';
+	my $one_k = 1024;
+	if ($size > $one_k) { $size /= $one_k; $unit = 'KB'; }
+	if ($size > $one_k) { $size /= $one_k; $unit = 'MB'; }
+	if ($size > $one_k) { $size /= $one_k; $unit = 'GB'; }
+	$string = sprintf '%5.1f %s', $size, $unit;
+};
+
+helper humanreadable_datetime => sub {
+	my ($self, $string) = @_;
+	my $mtime = $string;
+	my ($sec, $min, $hour, $mday, $month, $year, $wday) = localtime $mtime;
+	$year += 1900;
+	$month++;
+	my $datetime = sprintf('%4d-%02d-%02dT%02d:%02d:%02d',
+		$year, $month, $mday, $hour, $min, $sec);
+	$string = $datetime;
+};
+
+app->start;
+
+__DATA__
+ 
+ 
+@@ index.html.ep
+ 
+<!DOCTYPE html>
+<style>
+table { border-collapse: collapse; }
+th, td { border: 1px solid; padding: 6px; }
+</style>
+<table>
+  <thead><tr><th>filename</th><th>size</th><th>datetime</th><th>mode</th></tr></thead>
+  <tbody>
+    % for my $item (@$files) {
+    <tr>
+      <td>
+        %= $item->{filename}
+      </td>
+      <td title="<%= $item->{size} %>">
+        %= humanreadable_filesize($item->{size})
+      </td>
+      <td>
+        <time datetime="<%= $item->{mtime} %>">
+          %= humanreadable_datetime($item->{mtime})
+        </time>
+      </td>
+      <td>
+      	%= sprintf("%o", $item->{mode})
+      </td>
+    </tr>
+    % }
+  </tbody>
+</table>
